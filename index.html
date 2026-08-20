@@ -151,14 +151,15 @@
   <div class="grid">
     <div class="card left">
       <h2>Players</h2>
-      <div class="note">Tick players who are attending. Gender is only used to improve partnership matching.</div>
+      <div class="note">Your master player list can be saved on this device. Tick only the players attending today.</div>
 
       <div id="players"></div>
 
       <div class="actions">
         <button class="secondary" onclick="addPlayer()">+ Add player</button>
+        <button class="secondary" onclick="savePlayerList()">Save player list</button>
         <button class="ghost" onclick="selectAll(true)">Select all</button>
-        <button class="ghost" onclick="selectAll(false)">Clear</button>
+        <button class="ghost" onclick="clearAttendance()">Clear attendance</button>
       </div>
 
       <div class="settings">
@@ -179,8 +180,8 @@
       </div>
 
       <p class="note">
-        Fairness history is saved in this browser so repeat sessions can give a slight priority
-        to people who have previously sat out more often.
+        Player names, gender and fairness history can be saved in this browser. Each device keeps its own copy,
+        so the shared web page will not automatically share player data between different phones or computers.
       </p>
       <div id="error" class="error"></div>
     </div>
@@ -209,6 +210,7 @@ const starterPlayers = [
 ];
 
 let fairness = JSON.parse(localStorage.getItem("pickleballFairness") || "{}");
+let savedPlayerList = JSON.parse(localStorage.getItem("pickleballPlayerList") || "null");
 
 function saveFairness() {
   localStorage.setItem("pickleballFairness", JSON.stringify(fairness));
@@ -253,6 +255,22 @@ function renumberPlayers() {
 
 function selectAll(v) {
   document.querySelectorAll(".pattend").forEach(x => x.checked = v);
+}
+
+function savePlayerList() {
+  const list = [...document.querySelectorAll("#players .row")]
+    .map(row => ({
+      name: row.querySelector(".pname").value.trim(),
+      gender: row.querySelector(".pgender").value
+    }));
+
+  localStorage.setItem("pickleballPlayerList", JSON.stringify(list));
+  savedPlayerList = list;
+  alert("Player list saved on this device.");
+}
+
+function clearAttendance() {
+  document.querySelectorAll(".pattend").forEach(x => x.checked = false);
 }
 
 function getPlayers() {
@@ -464,7 +482,11 @@ function copySchedule() {
   );
 }
 
-starterPlayers.forEach(([n,g]) => addPlayer(n,g,Boolean(n)));
+const initialPlayers = Array.isArray(savedPlayerList) && savedPlayerList.length
+  ? savedPlayerList
+  : starterPlayers.map(([name, gender]) => ({name, gender}));
+
+initialPlayers.forEach(p => addPlayer(p.name || "", p.gender || "F", false));
 </script>
 </body>
 </html>
