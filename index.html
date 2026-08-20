@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pickleball Session Scheduler</title>
+<style>
+  :root {
+    --bg: #f5f7f8;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #667085;
+    --border: #d0d5dd;
+    --accent: #176b5b;
+    --accent2: #e8f3f0;
+    --danger: #b42318;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  h1 { margin: 0 0 6px; font-size: 30px; }
+  h2 { margin-top: 0; }
+  .sub { color: var(--muted); margin-bottom: 22px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 390px 1fr;
+    gap: 22px;
+    align-items: start;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 34px 1fr 110px 70px 38px;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  input[type="text"], select, input[type="number"] {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: white;
+  }
+  input[type="checkbox"] { transform: scale(1.2); }
+  .player-number {
+    text-align: center;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .primary { background: var(--accent); color: white; }
+  .secondary { background: var(--accent2); color: var(--accent); }
+  .ghost { background: #f2f4f7; color: #344054; }
+  .danger { background: #fee4e2; color: var(--danger); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .settings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .settings label { font-size: 13px; color: var(--muted); }
+  .settings input { margin-top: 5px; }
+  .round {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .round-head {
+    background: #f9fafb;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 700;
+  }
+  .courts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+  .court {
+    padding: 12px;
+    min-height: 110px;
+    border-right: 1px solid var(--border);
+  }
+  .court:last-child { border-right: none; }
+  .court-title { font-weight: 700; margin-bottom: 8px; }
+  .vs { color: var(--muted); margin: 4px 0; font-size: 13px; }
+  .sitout {
+    border-top: 1px solid var(--border);
+    padding: 10px 12px;
+    background: #fffdf7;
+  }
+  .summary {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .summary th, .summary td {
+    border-bottom: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+  }
+  .summary th { background: #f9fafb; }
+  .note { font-size: 13px; color: var(--muted); }
+  .error { color: var(--danger); font-weight: 700; margin-top: 10px; }
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .courts { grid-template-columns: 1fr; }
+    .court { border-right: none; border-bottom: 1px solid var(--border); }
+    .court:last-child { border-bottom: none; }
+  }
+  @media print {
+    body { background: white; }
+    .left, .actions, .sub { display: none !important; }
+    .grid { display: block; }
+    .card { border: none; box-shadow: none; padding: 0; }
+    .wrap { max-width: none; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pickleball Session Scheduler</h1>
+  <div class="sub">iPhone-friendly version with 30 editable player rows.</div>
+
+  <div class="grid">
+    <div class="card left">
+      <h2>Players</h2>
+      <div class="note">Tick players who are attending. Gender is only used to improve partnership matching.</div>
+
+      <div id="players"></div>
+
+      <div class="actions">
+        <button class="secondary" onclick="addPlayer()">+ Add player</button>
+        <button class="ghost" onclick="selectAll(true)">Select all</button>
+        <button class="ghost" onclick="selectAll(false)">Clear</button>
+      </div>
+
+      <div class="settings">
+        <label>Courts
+          <input id="courts" type="number" min="1" max="10" value="3">
+        </label>
+        <label>Rounds
+          <input id="rounds" type="number" min="1" max="20" value="5">
+        </label>
+        <label>Minutes/game
+          <input id="minutes" type="number" min="5" max="60" value="10">
+        </label>
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="generateSchedule()">Generate Session</button>
+        <button class="danger" onclick="resetHistory()">Reset fairness history</button>
+      </div>
+
+      <p class="note">
+        Fairness history is saved in this browser so repeat sessions can give a slight priority
+        to people who have previously sat out more often.
+      </p>
+      <div id="error" class="error"></div>
+    </div>
+
+    <div class="card">
+      <h2>Session Schedule</h2>
+      <div id="output" class="note">Add/select players and generate a session.</div>
+      <div class="actions">
+        <button class="ghost" onclick="window.print()">Print</button>
+        <button class="ghost" onclick="copySchedule()">Copy schedule</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const starterPlayers = [
+  ["Adam","M"],["Ben","M"],["Chris","M"],["David","M"],
+  ["Emma","F"],["Fiona","F"],["Grace","F"],["Helen","F"],
+  ["Izzy","F"],["Jane","F"],["Kate","F"],["Lucy","F"],
+  ["Mary","F"],["Nina","F"],
+  ["","F"],["","F"],["","F"],["","F"],
+  ["","F"],["","F"],["","F"],["","F"],
+  ["","F"],["","F"],["","F"],["","F"],
+  ["","F"],["","F"],["","F"],["","F"]
+];
+
+let fairness = JSON.parse(localStorage.getItem("pickleballFairness") || "{}");
+
+function saveFairness() {
+  localStorage.setItem("pickleballFairness", JSON.stringify(fairness));
+}
+
+function resetHistory() {
+  fairness = {};
+  saveFairness();
+  alert("Fairness history reset.");
+}
+
+function addPlayer(name="", gender="F", checked=true) {
+  const box = document.getElementById("players");
+  const row = document.createElement("div");
+  row.className = "row";
+  const number = box.children.length + 1;
+  row.innerHTML = `
+    <div class="player-number">${number}</div>
+    <input type="text" class="pname" value="${escapeHtml(name)}" placeholder="Name">
+    <select class="pgender">
+      <option value="F" ${gender==="F" ? "selected":""}>Female</option>
+      <option value="M" ${gender==="M" ? "selected":""}>Male</option>
+    </select>
+    <label style="font-size:12px;color:#667085">
+      <input type="checkbox" class="pattend" ${checked ? "checked":""}> Attend
+    </label>
+    <button class="ghost" onclick="this.parentElement.remove(); renumberPlayers()" title="Remove">×</button>`;
+  box.appendChild(row);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+
+function renumberPlayers() {
+  [...document.querySelectorAll("#players .row")].forEach((row, i) => {
+    row.querySelector(".player-number").textContent = i + 1;
+  });
+}
+
+function selectAll(v) {
+  document.querySelectorAll(".pattend").forEach(x => x.checked = v);
+}
+
+function getPlayers() {
+  return [...document.querySelectorAll("#players .row")]
+    .map(row => ({
+      name: row.querySelector(".pname").value.trim(),
+      gender: row.querySelector(".pgender").value,
+      attending: row.querySelector(".pattend").checked
+    }))
+    .filter(p => p.name && p.attending);
+}
+
+function key(a,b) {
+  return [a,b].sort().join("||");
+}
+
+function pairGenderType(team, genderByName) {
+  const g = team.map(n => genderByName[n]).sort().join("");
+  if (g === "FM") return "mixed";
+  if (g === "FF") return "ff";
+  return "mm";
+}
+
+function scheduleScore(games, partnerHistory, opponentHistory, genderByName) {
+  let score = 0;
+
+  for (const [t1,t2] of games) {
+    const type1 = pairGenderType(t1, genderByName);
+    const type2 = pairGenderType(t2, genderByName);
+
+    // Partnership preference
+    if (type1 !== "mixed") score += 10;
+    if (type2 !== "mixed") score += 10;
+
+    // Match preference
+    if (type1 === "mixed" && type2 === "mixed") score -= 20;
+    else if (type1 === "ff" && type2 === "ff") score -= 8;
+    else if ((type1 === "mm" && type2 === "ff") || (type1 === "ff" && type2 === "mm")) score += 18;
+
+    score += (partnerHistory[key(t1[0],t1[1])] || 0) * 9;
+    score += (partnerHistory[key(t2[0],t2[1])] || 0) * 9;
+
+    for (const a of t1) for (const b of t2) {
+      score += (opponentHistory[key(a,b)] || 0) * 2;
+    }
+  }
+  return score;
+}
+
+function randomGames(selected) {
+  const arr = [...selected].sort(() => Math.random() - .5);
+  const teams = [];
+  for (let i=0; i<arr.length; i+=2) teams.push([arr[i], arr[i+1]]);
+  const games = [];
+  for (let i=0; i<teams.length; i+=2) games.push([teams[i], teams[i+1]]);
+  return games;
+}
+
+function bestGames(selected, partnerHistory, opponentHistory, genderByName) {
+  let best = null, bestScore = Infinity;
+
+  // Try many random arrangements. For 12 players this is fast and gives good results.
+  for (let i=0; i<2500; i++) {
+    const games = randomGames(selected);
+    const score = scheduleScore(games, partnerHistory, opponentHistory, genderByName);
+    if (score < bestScore) {
+      bestScore = score;
+      best = games;
+    }
+  }
+  return best;
+}
+
+function generateSchedule() {
+  const error = document.getElementById("error");
+  error.textContent = "";
+
+  const players = getPlayers();
+  const courts = Math.max(1, parseInt(document.getElementById("courts").value || "3"));
+  const rounds = Math.max(1, parseInt(document.getElementById("rounds").value || "5"));
+  const minutes = Math.max(1, parseInt(document.getElementById("minutes").value || "10"));
+  const capacity = courts * 4;
+
+  if (players.length < 4) {
+    error.textContent = "You need at least 4 attending players.";
+    return;
+  }
+
+  const duplicate = players.find((p,i) =>
+    players.findIndex(q => q.name.toLowerCase() === p.name.toLowerCase()) !== i
+  );
+  if (duplicate) {
+    error.textContent = "Each player needs a unique name.";
+    return;
+  }
+
+  const names = players.map(p => p.name);
+  const genderByName = Object.fromEntries(players.map(p => [p.name,p.gender]));
+  const gamesPlayed = Object.fromEntries(names.map(n => [n,0]));
+  const satOut = Object.fromEntries(names.map(n => [n,0]));
+  const partnerHistory = {};
+  const opponentHistory = {};
+  const schedule = [];
+
+  for (let r=0; r<rounds; r++) {
+    let ranked = [...names].sort((a,b) => {
+      const aLifetime = fairness[a]?.sat || 0;
+      const bLifetime = fairness[b]?.sat || 0;
+
+      // Lowest current-session games first. Then reward lifetime sit-outs.
+      const x = gamesPlayed[a] - gamesPlayed[b];
+      if (x !== 0) return x;
+
+      const y = satOut[a] - satOut[b];
+      if (y !== 0) return y;
+
+      const z = bLifetime - aLifetime;
+      if (z !== 0) return z;
+
+      return Math.random() - .5;
+    });
+
+    let selected = ranked.slice(0, Math.min(capacity, ranked.length));
+
+    // Doubles requires a multiple of 4. Extra selected players sit out.
+    const playableCount = Math.floor(selected.length / 4) * 4;
+    selected = selected.slice(0, playableCount);
+
+    const sitting = names.filter(n => !selected.includes(n));
+    sitting.forEach(n => satOut[n]++);
+
+    const games = bestGames(selected, partnerHistory, opponentHistory, genderByName);
+
+    for (const [t1,t2] of games) {
+      [...t1,...t2].forEach(n => gamesPlayed[n]++);
+      partnerHistory[key(t1[0],t1[1])] = (partnerHistory[key(t1[0],t1[1])] || 0) + 1;
+      partnerHistory[key(t2[0],t2[1])] = (partnerHistory[key(t2[0],t2[1])] || 0) + 1;
+      for (const a of t1) for (const b of t2) {
+        opponentHistory[key(a,b)] = (opponentHistory[key(a,b)] || 0) + 1;
+      }
+    }
+
+    schedule.push({round:r+1, games, sitting});
+  }
+
+  // Update lifetime fairness.
+  for (const n of names) {
+    fairness[n] = fairness[n] || {played:0, sat:0};
+    fairness[n].played += gamesPlayed[n];
+    fairness[n].sat += satOut[n];
+  }
+  saveFairness();
+
+  renderSchedule(schedule, gamesPlayed, satOut, minutes);
+}
+
+function renderSchedule(schedule, gamesPlayed, satOut, minutes) {
+  let html = "";
+
+  schedule.forEach(item => {
+    const start = (item.round-1)*minutes;
+    const end = item.round*minutes;
+
+    html += `<div class="round">
+      <div class="round-head">
+        <span>Round ${item.round}</span>
+        <span>${start}–${end} minutes</span>
+      </div>
+      <div class="courts">`;
+
+    item.games.forEach((game,i) => {
+      const [t1,t2] = game;
+      html += `<div class="court">
+        <div class="court-title">Court ${i+1}</div>
+        <div>${escapeHtml(t1[0])} &amp; ${escapeHtml(t1[1])}</div>
+        <div class="vs">vs</div>
+        <div>${escapeHtml(t2[0])} &amp; ${escapeHtml(t2[1])}</div>
+      </div>`;
+    });
+
+    html += `</div>
+      <div class="sitout"><strong>Sitting out:</strong> ${
+        item.sitting.length ? item.sitting.map(escapeHtml).join(", ") : "Nobody"
+      }</div>
+    </div>`;
+  });
+
+  html += `<h2 style="margin-top:24px">Playing Time Summary</h2>
+    <table class="summary">
+      <thead><tr><th>Player</th><th>Games</th><th>Sit-outs</th></tr></thead><tbody>`;
+
+  Object.keys(gamesPlayed).sort().forEach(n => {
+    html += `<tr>
+      <td>${escapeHtml(n)}</td>
+      <td>${gamesPlayed[n]}</td>
+      <td>${satOut[n]}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById("output").innerHTML = html;
+}
+
+function copySchedule() {
+  const text = document.getElementById("output").innerText;
+  navigator.clipboard.writeText(text).then(
+    () => alert("Schedule copied."),
+    () => alert("Could not copy automatically. Select the schedule and copy it manually.")
+  );
+}
+
+starterPlayers.forEach(([n,g]) => addPlayer(n,g,Boolean(n)));
+</script>
+</body>
+</html>
