@@ -3,192 +3,121 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Pickleball Session Scheduler</title>
 <style>
-  :root {
-    --bg: #f5f7f8;
-    --card: #ffffff;
-    --text: #1f2933;
-    --muted: #667085;
-    --border: #d0d5dd;
-    --accent: #176b5b;
-    --accent2: #e8f3f0;
-    --danger: #b42318;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-  }
-  .wrap {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-  h1 { margin: 0 0 6px; font-size: 30px; }
-  h2 { margin-top: 0; }
-  .sub { color: var(--muted); margin-bottom: 22px; }
-  .grid {
-    display: grid;
-    grid-template-columns: 390px 1fr;
-    gap: 22px;
-    align-items: start;
-  }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: 0 1px 2px rgba(16,24,40,.04);
-  }
-  .row {
-    display: grid;
-    grid-template-columns: 34px 1fr 110px 70px 38px;
-    gap: 8px;
-    margin-bottom: 8px;
-    align-items: center;
-  }
-  input[type="text"], select, input[type="number"] {
-    width: 100%;
-    padding: 9px 10px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background: white;
-  }
-  input[type="checkbox"] { transform: scale(1.2); }
-  .player-number {
-    text-align: center;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  button {
-    border: none;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .primary { background: var(--accent); color: white; }
-  .secondary { background: var(--accent2); color: var(--accent); }
-  .ghost { background: #f2f4f7; color: #344054; }
-  .danger { background: #fee4e2; color: var(--danger); }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-  .settings {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 14px 0;
-  }
-  .settings label { font-size: 13px; color: var(--muted); }
-  .settings input { margin-top: 5px; }
-  .round {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 14px;
-    overflow: hidden;
-  }
-  .round-head {
-    background: #f9fafb;
-    padding: 10px 12px;
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    font-weight: 700;
-  }
-  .courts {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
-  }
-  .court {
-    padding: 12px;
-    min-height: 110px;
-    border-right: 1px solid var(--border);
-  }
-  .court:last-child { border-right: none; }
-  .court-title { font-weight: 700; margin-bottom: 8px; }
-  .vs { color: var(--muted); margin: 4px 0; font-size: 13px; }
-  .sitout {
-    border-top: 1px solid var(--border);
-    padding: 10px 12px;
-    background: #fffdf7;
-  }
-  .summary {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-  }
-  .summary th, .summary td {
-    border-bottom: 1px solid var(--border);
-    padding: 8px;
-    text-align: left;
-  }
-  .summary th { background: #f9fafb; }
-  .note { font-size: 13px; color: var(--muted); }
-  .error { color: var(--danger); font-weight: 700; margin-top: 10px; }
-  @media (max-width: 900px) {
-    .grid { grid-template-columns: 1fr; }
-    .courts { grid-template-columns: 1fr; }
-    .court { border-right: none; border-bottom: 1px solid var(--border); }
-    .court:last-child { border-bottom: none; }
-  }
-  @media print {
-    body { background: white; }
-    .left, .actions, .sub { display: none !important; }
-    .grid { display: block; }
-    .card { border: none; box-shadow: none; padding: 0; }
-    .wrap { max-width: none; padding: 0; }
-  }
+:root{
+  --bg:#f5f7f8;--card:#fff;--text:#1f2933;--muted:#667085;--border:#d0d5dd;
+  --accent:#176b5b;--accent2:#e8f3f0;--danger:#b42318;--warn:#fff7e6
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:1250px;margin:auto;padding:20px}
+h1{margin:0 0 6px;font-size:30px} h2{margin:0 0 12px} h3{margin:18px 0 8px}
+.sub,.note{color:var(--muted)} .sub{margin-bottom:18px}.note{font-size:13px}
+.grid{display:grid;grid-template-columns:470px 1fr;gap:20px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.header-row,.player-row{
+  display:grid;grid-template-columns:30px minmax(110px,1fr) 92px 135px 34px;
+  gap:7px;align-items:center
+}
+.header-row{font-size:11px;color:var(--muted);font-weight:700;margin:10px 0 6px}
+.player-row{margin-bottom:7px}
+.player-number{text-align:center;font-weight:700;color:var(--muted)}
+input[type=text],input[type=number],select{
+  width:100%;padding:8px 9px;border:1px solid var(--border);border-radius:7px;background:#fff;font-size:14px
+}
+button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:pointer}
+.primary{background:var(--accent);color:#fff}.secondary{background:var(--accent2);color:var(--accent)}
+.ghost{background:#f2f4f7;color:#344054}.danger{background:#fee4e2;color:var(--danger)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.hour-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.hour-box{border:1px solid var(--border);border-radius:10px;padding:11px}
+.hour-box strong{display:block;margin-bottom:8px}
+.settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.settings-grid label{font-size:11px;color:var(--muted)}
+.settings-grid input{margin-top:4px}
+.hour-summary{margin:8px 0 12px;padding:9px 11px;border-radius:8px;background:#f9fafb;font-size:13px}
+.round{border:1px solid var(--border);border-radius:10px;margin:0 0 12px;overflow:hidden}
+.round-head{background:#f9fafb;padding:10px 12px;display:flex;justify-content:space-between;font-weight:700;gap:10px;font-size:17px}
+.courts{display:grid;grid-template-columns:repeat(3,1fr)}
+.court{padding:13px;min-height:112px;border-right:1px solid var(--border);font-size:18px;line-height:1.35}
+.court:last-child{border-right:0}.court-title{font-weight:700;margin-bottom:8px;font-size:17px}.vs{font-size:14px;color:var(--muted);margin:5px 0}
+.sitout{border-top:1px solid var(--border);padding:11px 13px;background:var(--warn);font-size:17px;line-height:1.35}
+.summary{width:100%;border-collapse:collapse;margin-top:8px}.summary th,.summary td{border-bottom:1px solid var(--border);padding:9px;text-align:center;font-size:16px}
+.summary th:first-child,.summary td:first-child{text-align:left}.summary th{background:#f9fafb}
+.badge{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--accent2);color:var(--accent);font-size:11px;font-weight:700}
+.warning{color:#8a4b08;background:#fff4dc;border:1px solid #f0d095;padding:9px;border-radius:8px;margin:8px 0;font-size:13px}
+.error{color:var(--danger);font-weight:700;margin-top:10px}
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr}.courts{grid-template-columns:1fr}.court{border-right:0;border-bottom:1px solid var(--border)}
+  .court:last-child{border-bottom:0}
+}
+@media(max-width:560px){
+  .wrap{padding:10px}.card{padding:12px}
+  .header-row,.player-row{grid-template-columns:26px minmax(95px,1fr) 78px 114px 30px;gap:4px}
+  input[type=text],select{font-size:12px;padding:7px 5px}
+  .hour-settings{grid-template-columns:1fr}
+}
+@media print{
+  body{background:#fff}.left,.actions,.sub{display:none!important}.grid{display:block}.card{border:0;box-shadow:none;padding:0}.wrap{max-width:none;padding:0}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Pickleball Session Scheduler</h1>
-  <div class="sub">iPhone-friendly version with 30 editable player rows.</div>
+  <div class="sub">Two-hour scheduler: 14:00–15:00 and 15:00–16:00, with newcomer protection in the second hour.</div>
 
   <div class="grid">
     <div class="card left">
       <h2>Players</h2>
-      <div class="note">Your master player list can be saved on this device. Tick only the players attending today.</div>
+      <div class="note">Save your master list once. For each session choose whether each person is playing the first hour, second hour, both hours, or not playing.</div>
 
+      <div class="header-row"><div>#</div><div>Name</div><div>Gender</div><div>Playing</div><div></div></div>
       <div id="players"></div>
 
       <div class="actions">
         <button class="secondary" onclick="addPlayer()">+ Add player</button>
         <button class="secondary" onclick="savePlayerList()">Save player list</button>
-        <button class="ghost" onclick="selectAll(true)">Select all</button>
-        <button class="ghost" onclick="clearAttendance()">Clear attendance</button>
+        <button class="ghost" onclick="clearAttendance()">Clear playing times</button>
       </div>
 
-      <div class="settings">
-        <label>Courts
-          <input id="courts" type="number" min="1" max="10" value="3">
-        </label>
-        <label>Rounds
-          <input id="rounds" type="number" min="1" max="20" value="5">
-        </label>
-        <label>Minutes/game
-          <input id="minutes" type="number" min="5" max="60" value="10">
-        </label>
+      <div class="hour-settings">
+        <div class="hour-box">
+          <strong>14:00–15:00</strong>
+          <div class="settings-grid">
+            <label>Courts<input id="courts1" type="number" min="1" max="3" value="3"></label>
+            <label>Rounds<input id="rounds1" type="number" min="1" max="10" value="5"></label>
+            <label>Mins/game<input id="minutes1" type="number" min="5" max="15" value="10"></label>
+          </div>
+        </div>
+        <div class="hour-box">
+          <strong>15:00–16:00</strong>
+          <div class="settings-grid">
+            <label>Courts<input id="courts2" type="number" min="1" max="3" value="3"></label>
+            <label>Rounds<input id="rounds2" type="number" min="1" max="10" value="5"></label>
+            <label>Mins/game<input id="minutes2" type="number" min="5" max="15" value="10"></label>
+          </div>
+        </div>
       </div>
 
       <div class="actions">
-        <button class="primary" onclick="generateSchedule()">Generate Session</button>
+        <button class="primary" onclick="generateDay()">Generate both hours</button>
         <button class="danger" onclick="resetHistory()">Reset fairness history</button>
       </div>
 
       <p class="note">
-        Player names, gender and fairness history can be saved in this browser. Each device keeps its own copy,
-        so the shared web page will not automatically share player data between different phones or computers.
+        Pairing formats are MF vs MF, FF vs FF or MM vs MM. Mixed matches are preferred where numbers allow.
+        In the second hour, people who have just arrived are protected from sitting out immediately; people playing both hours take priority for early breaks where possible.
       </p>
       <div id="error" class="error"></div>
     </div>
 
     <div class="card">
-      <h2>Session Schedule</h2>
-      <div id="output" class="note">Add/select players and generate a session.</div>
+      <h2>Schedule</h2>
+      <div id="output" class="note">Choose playing times and generate both hours.</div>
       <div class="actions">
         <button class="ghost" onclick="window.print()">Print</button>
         <button class="ghost" onclick="copySchedule()">Copy schedule</button>
@@ -198,295 +127,266 @@
 </div>
 
 <script>
-const starterPlayers = [
-  ["Adam","M"],["Ben","M"],["Chris","M"],["David","M"],
-  ["Emma","F"],["Fiona","F"],["Grace","F"],["Helen","F"],
-  ["Izzy","F"],["Jane","F"],["Kate","F"],["Lucy","F"],
-  ["Mary","F"],["Nina","F"],
-  ["","F"],["","F"],["","F"],["","F"],
-  ["","F"],["","F"],["","F"],["","F"],
-  ["","F"],["","F"],["","F"],["","F"],
-  ["","F"],["","F"],["","F"],["","F"]
-];
-
-let fairness = JSON.parse(localStorage.getItem("pickleballFairness") || "{}");
+const starterPlayers = Array.from({length:30}, (_,i)=>({name:"",gender:"F"}));
 let savedPlayerList = JSON.parse(localStorage.getItem("pickleballPlayerList") || "null");
+let fairness = JSON.parse(localStorage.getItem("pickleballFairnessV2") || "{}");
 
-function saveFairness() {
-  localStorage.setItem("pickleballFairness", JSON.stringify(fairness));
-}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function key(a,b){return [a,b].sort().join("||")}
 
-function resetHistory() {
-  fairness = {};
-  saveFairness();
-  alert("Fairness history reset.");
-}
-
-function addPlayer(name="", gender="F", checked=true) {
-  const box = document.getElementById("players");
-  const row = document.createElement("div");
-  row.className = "row";
-  const number = box.children.length + 1;
-  row.innerHTML = `
-    <div class="player-number">${number}</div>
+function addPlayer(name="",gender="F"){
+  const box=document.getElementById("players");
+  const row=document.createElement("div"); row.className="player-row";
+  const n=box.children.length+1;
+  row.innerHTML=`
+    <div class="player-number">${n}</div>
     <input type="text" class="pname" value="${escapeHtml(name)}" placeholder="Name">
-    <select class="pgender">
-      <option value="F" ${gender==="F" ? "selected":""}>Female</option>
-      <option value="M" ${gender==="M" ? "selected":""}>Male</option>
+    <select class="pgender"><option value="F" ${gender==="F"?"selected":""}>Female</option><option value="M" ${gender==="M"?"selected":""}>Male</option></select>
+    <select class="ptime">
+      <option value="none">Not playing</option>
+      <option value="h1">14:00–15:00</option>
+      <option value="h2">15:00–16:00</option>
+      <option value="both">Both hours</option>
     </select>
-    <label style="font-size:12px;color:#667085">
-      <input type="checkbox" class="pattend" ${checked ? "checked":""}> Attend
-    </label>
-    <button class="ghost" onclick="this.parentElement.remove(); renumberPlayers()" title="Remove">×</button>`;
-  box.appendChild(row);
+    <button class="ghost" onclick="this.parentElement.remove();renumberPlayers()" title="Remove">×</button>`;
+  box.appendChild(row)
 }
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-  }[c]));
+function renumberPlayers(){[...document.querySelectorAll(".player-row")].forEach((r,i)=>r.querySelector(".player-number").textContent=i+1)}
+function clearAttendance(){document.querySelectorAll(".ptime").forEach(x=>x.value="none")}
+function savePlayerList(){
+  const list=[...document.querySelectorAll(".player-row")].map(r=>({name:r.querySelector(".pname").value.trim(),gender:r.querySelector(".pgender").value}));
+  localStorage.setItem("pickleballPlayerList",JSON.stringify(list)); savedPlayerList=list; alert("Master player list saved on this device.")
 }
-
-function renumberPlayers() {
-  [...document.querySelectorAll("#players .row")].forEach((row, i) => {
-    row.querySelector(".player-number").textContent = i + 1;
-  });
+function resetHistory(){fairness={};localStorage.setItem("pickleballFairnessV2","{}");alert("Fairness history reset.")}
+function getRoster(){
+  return [...document.querySelectorAll(".player-row")].map(r=>({
+    name:r.querySelector(".pname").value.trim(),
+    gender:r.querySelector(".pgender").value,
+    time:r.querySelector(".ptime").value
+  })).filter(p=>p.name)
 }
+function validForHour(p,h){return p.time==="both" || p.time===h}
 
-function selectAll(v) {
-  document.querySelectorAll(".pattend").forEach(x => x.checked = v);
-}
-
-function savePlayerList() {
-  const list = [...document.querySelectorAll("#players .row")]
-    .map(row => ({
-      name: row.querySelector(".pname").value.trim(),
-      gender: row.querySelector(".pgender").value
-    }));
-
-  localStorage.setItem("pickleballPlayerList", JSON.stringify(list));
-  savedPlayerList = list;
-  alert("Player list saved on this device.");
-}
-
-function clearAttendance() {
-  document.querySelectorAll(".pattend").forEach(x => x.checked = false);
-}
-
-function getPlayers() {
-  return [...document.querySelectorAll("#players .row")]
-    .map(row => ({
-      name: row.querySelector(".pname").value.trim(),
-      gender: row.querySelector(".pgender").value,
-      attending: row.querySelector(".pattend").checked
-    }))
-    .filter(p => p.name && p.attending);
-}
-
-function key(a,b) {
-  return [a,b].sort().join("||");
-}
-
-function pairGenderType(team, genderByName) {
-  const g = team.map(n => genderByName[n]).sort().join("");
-  if (g === "FM") return "mixed";
-  if (g === "FF") return "ff";
-  return "mm";
-}
-
-function scheduleScore(games, partnerHistory, opponentHistory, genderByName) {
-  let score = 0;
-
-  for (const [t1,t2] of games) {
-    const type1 = pairGenderType(t1, genderByName);
-    const type2 = pairGenderType(t2, genderByName);
-
-    // Partnership preference
-    if (type1 !== "mixed") score += 10;
-    if (type2 !== "mixed") score += 10;
-
-    // Match preference
-    if (type1 === "mixed" && type2 === "mixed") score -= 20;
-    else if (type1 === "ff" && type2 === "ff") score -= 8;
-    else if ((type1 === "mm" && type2 === "ff") || (type1 === "ff" && type2 === "mm")) score += 18;
-
-    score += (partnerHistory[key(t1[0],t1[1])] || 0) * 9;
-    score += (partnerHistory[key(t2[0],t2[1])] || 0) * 9;
-
-    for (const a of t1) for (const b of t2) {
-      score += (opponentHistory[key(a,b)] || 0) * 2;
-    }
-  }
-  return score;
-}
-
-function randomGames(selected) {
-  const arr = [...selected].sort(() => Math.random() - .5);
-  const teams = [];
-  for (let i=0; i<arr.length; i+=2) teams.push([arr[i], arr[i+1]]);
-  const games = [];
-  for (let i=0; i<teams.length; i+=2) games.push([teams[i], teams[i+1]]);
-  return games;
-}
-
-function bestGames(selected, partnerHistory, opponentHistory, genderByName) {
-  let best = null, bestScore = Infinity;
-
-  // Try many random arrangements. For 12 players this is fast and gives good results.
-  for (let i=0; i<2500; i++) {
-    const games = randomGames(selected);
-    const score = scheduleScore(games, partnerHistory, opponentHistory, genderByName);
-    if (score < bestScore) {
-      bestScore = score;
-      best = games;
+function planGameTypes(maleCount,totalPlayers){
+  const games=totalPlayers/4;
+  let best=null;
+  for(let mixed=games;mixed>=0;mixed--){
+    const remM=maleCount-2*mixed, remF=(totalPlayers-maleCount)-2*mixed;
+    if(remM<0||remF<0) continue;
+    if(remM%4===0 && remF%4===0 && remM/4+remF/4+mixed===games){
+      best={mixed,mm:remM/4,ff:remF/4}; break;
     }
   }
   return best;
 }
 
-function generateSchedule() {
-  const error = document.getElementById("error");
-  error.textContent = "";
-
-  const players = getPlayers();
-  const courts = Math.max(1, parseInt(document.getElementById("courts").value || "3"));
-  const rounds = Math.max(1, parseInt(document.getElementById("rounds").value || "5"));
-  const minutes = Math.max(1, parseInt(document.getElementById("minutes").value || "10"));
-  const capacity = courts * 4;
-
-  if (players.length < 4) {
-    error.textContent = "You need at least 4 attending players.";
-    return;
+function pairingScore(games,partnerHistory,opponentHistory){
+  let score=0;
+  for(const [t1,t2] of games){
+    score+=(partnerHistory[key(t1[0],t1[1])]||0)*12;
+    score+=(partnerHistory[key(t2[0],t2[1])]||0)*12;
+    for(const a of t1) for(const b of t2) score+=(opponentHistory[key(a,b)]||0)*3;
   }
+  return score+Math.random()*0.2;
+}
 
-  const duplicate = players.find((p,i) =>
-    players.findIndex(q => q.name.toLowerCase() === p.name.toLowerCase()) !== i
-  );
-  if (duplicate) {
-    error.textContent = "Each player needs a unique name.";
-    return;
+function randomValidGames(selected,genderByName){
+  let men=selected.filter(n=>genderByName[n]==="M").sort(()=>Math.random()-.5);
+  let women=selected.filter(n=>genderByName[n]==="F").sort(()=>Math.random()-.5);
+  const plan=planGameTypes(men.length,selected.length);
+  if(!plan) return null;
+  const games=[];
+  for(let i=0;i<plan.mixed;i++){
+    const m1=men.pop(),m2=men.pop(),f1=women.pop(),f2=women.pop();
+    if(Math.random()<.5) games.push([[m1,f1],[m2,f2]]); else games.push([[m1,f2],[m2,f1]]);
   }
+  for(let i=0;i<plan.mm;i++){
+    const a=men.pop(),b=men.pop(),c=men.pop(),d=men.pop();
+    if(Math.random()<.5) games.push([[a,b],[c,d]]); else games.push([[a,c],[b,d]]);
+  }
+  for(let i=0;i<plan.ff;i++){
+    const a=women.pop(),b=women.pop(),c=women.pop(),d=women.pop();
+    if(Math.random()<.5) games.push([[a,b],[c,d]]); else games.push([[a,c],[b,d]]);
+  }
+  return games.sort(()=>Math.random()-.5);
+}
 
-  const names = players.map(p => p.name);
-  const genderByName = Object.fromEntries(players.map(p => [p.name,p.gender]));
-  const gamesPlayed = Object.fromEntries(names.map(n => [n,0]));
-  const satOut = Object.fromEntries(names.map(n => [n,0]));
-  const partnerHistory = {};
-  const opponentHistory = {};
-  const schedule = [];
+function bestGames(selected,partnerHistory,opponentHistory,genderByName){
+  let best=null,bestScore=Infinity;
+  for(let i=0;i<1800;i++){
+    const g=randomValidGames(selected,genderByName);
+    if(!g) continue;
+    const s=pairingScore(g,partnerHistory,opponentHistory);
+    if(s<bestScore){best=g;bestScore=s}
+  }
+  return best;
+}
 
-  for (let r=0; r<rounds; r++) {
-    let ranked = [...names].sort((a,b) => {
-      const aLifetime = fairness[a]?.sat || 0;
-      const bLifetime = fairness[b]?.sat || 0;
+function chooseSelected(active, playableCount, state, hour, roundIndex){
+  const genderByName=state.genderByName;
+  const candidates=[...active];
+  const sitCount=active.length-playableCount;
+  if(sitCount<=0) return {selected:candidates,sitting:[]};
 
-      // Lowest current-session games first. Then reward lifetime sit-outs.
-      const x = gamesPlayed[a] - gamesPlayed[b];
-      if (x !== 0) return x;
+  function sitPriority(n){
+    const p=state.byName[n];
+    const hourGames=state.hourGames[n]||0;
+    const hourSits=state.hourSits[n]||0;
+    const dayGames=state.dayGames[n]||0;
+    const hist=fairness[n]?.sits||0;
+    let score=0;
 
-      const y = satOut[a] - satOut[b];
-      if (y !== 0) return y;
+    // Most important: spread sit-outs within the current hour.
+    score -= hourSits*120;
 
-      const z = bLifetime - aLifetime;
-      if (z !== 0) return z;
+    if(hour==="h2"){
+      // New arrivals should not sit immediately. People playing both hours
+      // are deliberately more available to absorb early second-hour breaks.
+      if(p.time==="h2" && hourGames===0) score -= 1000;
+      if(p.time==="h2") score -= 70;
+      if(p.time==="both") score += 90;
 
-      return Math.random() - .5;
-    });
-
-    let selected = ranked.slice(0, Math.min(capacity, ranked.length));
-
-    // Doubles requires a multiple of 4. Extra selected players sit out.
-    const playableCount = Math.floor(selected.length / 4) * 4;
-    selected = selected.slice(0, playableCount);
-
-    const sitting = names.filter(n => !selected.includes(n));
-    sitting.forEach(n => satOut[n]++);
-
-    const games = bestGames(selected, partnerHistory, opponentHistory, genderByName);
-
-    for (const [t1,t2] of games) {
-      [...t1,...t2].forEach(n => gamesPlayed[n]++);
-      partnerHistory[key(t1[0],t1[1])] = (partnerHistory[key(t1[0],t1[1])] || 0) + 1;
-      partnerHistory[key(t2[0],t2[1])] = (partnerHistory[key(t2[0],t2[1])] || 0) + 1;
-      for (const a of t1) for (const b of t2) {
-        opponentHistory[key(a,b)] = (opponentHistory[key(a,b)] || 0) + 1;
-      }
+      // If a two-hour player already had a first-hour break, allow a second
+      // break before giving a newly arrived player an immediate first break.
+      if(p.time==="both" && (state.h1Sits[n]||0)>0) score += 30;
     }
 
-    schedule.push({round:r+1, games, sitting});
+    // Slight preference to sit those who have played more in the day/hour.
+    score += hourGames*10 + dayGames*2;
+    score -= hist*0.15;
+    score += Math.random()*4;
+    return score;
   }
 
-  // Update lifetime fairness.
-  for (const n of names) {
-    fairness[n] = fairness[n] || {played:0, sat:0};
-    fairness[n].played += gamesPlayed[n];
-    fairness[n].sat += satOut[n];
+  const sitting=[...candidates].sort((a,b)=>sitPriority(b)-sitPriority(a)).slice(0,sitCount);
+  let selected=candidates.filter(n=>!sitting.includes(n));
+
+  // Valid same-format games require an even number of men in the selected group.
+  const maleCount=selected.filter(n=>genderByName[n]==="M").length;
+  if(maleCount%2!==0){
+    const sittingMen=sitting.filter(n=>genderByName[n]==="M");
+    const sittingWomen=sitting.filter(n=>genderByName[n]==="F");
+    const selectedMen=selected.filter(n=>genderByName[n]==="M");
+    const selectedWomen=selected.filter(n=>genderByName[n]==="F");
+    let swapOut=null,swapIn=null;
+    if(sittingMen.length && selectedWomen.length){swapIn=sittingMen[0];swapOut=selectedWomen[selectedWomen.length-1]}
+    else if(sittingWomen.length && selectedMen.length){swapIn=sittingWomen[0];swapOut=selectedMen[selectedMen.length-1]}
+    if(swapIn&&swapOut){
+      selected=selected.filter(n=>n!==swapOut); selected.push(swapIn);
+      const idx=sitting.indexOf(swapIn); sitting.splice(idx,1,swapOut);
+    }
   }
-  saveFairness();
-
-  renderSchedule(schedule, gamesPlayed, satOut, minutes);
+  return {selected,sitting};
 }
 
-function renderSchedule(schedule, gamesPlayed, satOut, minutes) {
-  let html = "";
+function runHour(roster,hour,courts,rounds,minutes,state){
+  const activePlayers=roster.filter(p=>validForHour(p,hour));
+  const active=activePlayers.map(p=>p.name);
+  const capacity=courts*4;
+  const playableCount=Math.floor(Math.min(capacity,active.length)/4)*4;
+  const result={hour,active:activePlayers.length,courts,rounds,minutes,roundData:[],warnings:[]};
 
-  schedule.forEach(item => {
-    const start = (item.round-1)*minutes;
-    const end = item.round*minutes;
+  if(playableCount<4){result.warnings.push("Fewer than four players selected for this hour.");return result}
 
-    html += `<div class="round">
-      <div class="round-head">
-        <span>Round ${item.round}</span>
-        <span>${start}–${end} minutes</span>
-      </div>
-      <div class="courts">`;
+  state.hourGames=Object.fromEntries(active.map(n=>[n,0]));
+  state.hourSits=Object.fromEntries(active.map(n=>[n,0]));
+  const partnerHistory={},opponentHistory={};
 
-    item.games.forEach((game,i) => {
-      const [t1,t2] = game;
-      html += `<div class="court">
-        <div class="court-title">Court ${i+1}</div>
-        <div>${escapeHtml(t1[0])} &amp; ${escapeHtml(t1[1])}</div>
-        <div class="vs">vs</div>
-        <div>${escapeHtml(t2[0])} &amp; ${escapeHtml(t2[1])}</div>
-      </div>`;
-    });
+  for(let r=0;r<rounds;r++){
+    const {selected,sitting}=chooseSelected(active,playableCount,state,hour,r);
+    let games=bestGames(selected,partnerHistory,opponentHistory,state.genderByName);
 
-    html += `</div>
-      <div class="sitout"><strong>Sitting out:</strong> ${
-        item.sitting.length ? item.sitting.map(escapeHtml).join(", ") : "Nobody"
-      }</div>
-    </div>`;
+    if(!games){
+      result.warnings.push(`Round ${r+1}: exact MF/MF, FF/FF or MM/MM formatting was not possible with the selected gender mix.`);
+      // Fallback random pairing only if mathematically unavoidable.
+      const arr=[...selected].sort(()=>Math.random()-.5); games=[];
+      for(let i=0;i<arr.length;i+=4) games.push([[arr[i],arr[i+1]],[arr[i+2],arr[i+3]]]);
+    }
+
+    sitting.forEach(n=>{state.hourSits[n]++;state.daySits[n]=(state.daySits[n]||0)+1});
+    for(const [t1,t2] of games){
+      [...t1,...t2].forEach(n=>{state.hourGames[n]++;state.dayGames[n]=(state.dayGames[n]||0)+1});
+      partnerHistory[key(t1[0],t1[1])] = (partnerHistory[key(t1[0],t1[1])]||0)+1;
+      partnerHistory[key(t2[0],t2[1])] = (partnerHistory[key(t2[0],t2[1])]||0)+1;
+      for(const a of t1) for(const b of t2) opponentHistory[key(a,b)] = (opponentHistory[key(a,b)]||0)+1;
+    }
+    result.roundData.push({round:r+1,games,sitting});
+  }
+
+  if(hour==="h1") active.forEach(n=>state.h1Sits[n]=state.hourSits[n]||0);
+  return result;
+}
+
+function generateDay(){
+  const error=document.getElementById("error");error.textContent="";
+  const roster=getRoster().filter(p=>p.time!=="none");
+  if(roster.length<4){error.textContent="Select at least four players.";return}
+  const dup=roster.find((p,i)=>roster.findIndex(q=>q.name.toLowerCase()===p.name.toLowerCase())!==i);
+  if(dup){error.textContent="Each player needs a unique name.";return}
+
+  const byName=Object.fromEntries(roster.map(p=>[p.name,p]));
+  const genderByName=Object.fromEntries(roster.map(p=>[p.name,p.gender]));
+  const state={byName,genderByName,dayGames:{},daySits:{},h1Sits:{}};
+  roster.forEach(p=>{state.dayGames[p.name]=0;state.daySits[p.name]=0;state.h1Sits[p.name]=0});
+
+  const h1=runHour(roster,"h1",
+    Math.max(1,+document.getElementById("courts1").value),
+    Math.max(1,+document.getElementById("rounds1").value),
+    Math.max(1,+document.getElementById("minutes1").value),state);
+
+  const h2=runHour(roster,"h2",
+    Math.max(1,+document.getElementById("courts2").value),
+    Math.max(1,+document.getElementById("rounds2").value),
+    Math.max(1,+document.getElementById("minutes2").value),state);
+
+  roster.forEach(p=>{
+    fairness[p.name]=fairness[p.name]||{games:0,sits:0};
+    fairness[p.name].games+=(state.dayGames[p.name]||0);
+    fairness[p.name].sits+=(state.daySits[p.name]||0);
   });
+  localStorage.setItem("pickleballFairnessV2",JSON.stringify(fairness));
+  renderDay([h1,h2],roster,state);
+}
 
-  html += `<h2 style="margin-top:24px">Playing Time Summary</h2>
-    <table class="summary">
-      <thead><tr><th>Player</th><th>Games</th><th>Sit-outs</th></tr></thead><tbody>`;
+function fmtTime(hour,round,mins){
+  const start=hour==="h1"?14*60:15*60;
+  const a=start+(round-1)*mins,b=a+mins;
+  const f=x=>String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0");
+  return `${f(a)}–${f(b)}`;
+}
 
-  Object.keys(gamesPlayed).sort().forEach(n => {
-    html += `<tr>
-      <td>${escapeHtml(n)}</td>
-      <td>${gamesPlayed[n]}</td>
-      <td>${satOut[n]}</td>
-    </tr>`;
+function renderDay(hours,roster,state){
+  let html="";
+  for(const hr of hours){
+    const title=hr.hour==="h1"?"14:00–15:00":"15:00–16:00";
+    html+=`<h3>${title} <span class="badge">${hr.active} players · ${hr.courts} court${hr.courts!==1?"s":""}</span></h3>`;
+    html+=`<div class="hour-summary">${hr.rounds} rounds × ${hr.minutes} minutes. ${Math.min(hr.active,hr.courts*4)} can play at once.</div>`;
+    hr.warnings.forEach(w=>html+=`<div class="warning">${escapeHtml(w)}</div>`);
+    for(const item of hr.roundData){
+      html+=`<div class="round"><div class="round-head"><span>Round ${item.round}</span><span>${fmtTime(hr.hour,item.round,hr.minutes)}</span></div><div class="courts">`;
+      item.games.forEach((g,i)=>{
+        html+=`<div class="court"><div class="court-title">Court ${i+1}</div><div>${escapeHtml(g[0][0])} &amp; ${escapeHtml(g[0][1])}</div><div class="vs">vs</div><div>${escapeHtml(g[1][0])} &amp; ${escapeHtml(g[1][1])}</div></div>`;
+      });
+      html+=`</div><div class="sitout"><strong>Sitting out:</strong> ${item.sitting.length?item.sitting.map(escapeHtml).join(", "):"Nobody"}</div></div>`;
+    }
+  }
+
+  html+=`<h3>Day summary</h3><table class="summary"><thead><tr><th>Player</th><th>Playing</th><th>Games</th><th>Sit-outs</th></tr></thead><tbody>`;
+  const label={h1:"14–15",h2:"15–16",both:"Both"};
+  roster.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
+    html+=`<tr><td>${escapeHtml(p.name)}</td><td>${label[p.time]}</td><td>${state.dayGames[p.name]||0}</td><td>${state.daySits[p.name]||0}</td></tr>`;
   });
-
-  html += `</tbody></table>`;
-  document.getElementById("output").innerHTML = html;
+  html+=`</tbody></table>`;
+  document.getElementById("output").innerHTML=html;
 }
 
-function copySchedule() {
-  const text = document.getElementById("output").innerText;
-  navigator.clipboard.writeText(text).then(
-    () => alert("Schedule copied."),
-    () => alert("Could not copy automatically. Select the schedule and copy it manually.")
-  );
+function copySchedule(){
+  const text=document.getElementById("output").innerText;
+  navigator.clipboard.writeText(text).then(()=>alert("Schedule copied."),()=>alert("Could not copy automatically."));
 }
 
-const initialPlayers = Array.isArray(savedPlayerList) && savedPlayerList.length
-  ? savedPlayerList
-  : starterPlayers.map(([name, gender]) => ({name, gender}));
-
-initialPlayers.forEach(p => addPlayer(p.name || "", p.gender || "F", false));
+const initial=Array.isArray(savedPlayerList)&&savedPlayerList.length?savedPlayerList:starterPlayers;
+initial.forEach(p=>addPlayer(p.name||"",p.gender||"F"));
 </script>
 </body>
 </html>
