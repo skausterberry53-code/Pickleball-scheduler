@@ -35,6 +35,16 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
 .hour-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .hour-box{border:1px solid var(--border);border-radius:10px;padding:11px}
 .hour-box strong{display:block;margin-bottom:8px}
+.player-count{
+  margin:0 0 10px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:var(--accent2);
+  color:var(--accent);
+  font-size:15px;
+  font-weight:700;
+  text-align:center
+}
 .settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .settings-grid label{font-size:11px;color:var(--muted)}
 .settings-grid input{margin-top:4px}
@@ -87,6 +97,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
       <div class="hour-settings">
         <div class="hour-box">
           <strong>14:00–15:00</strong>
+          <div id="count1" class="player-count">0 players selected</div>
           <div class="settings-grid">
             <label>Courts<input id="courts1" type="number" min="1" max="3" value="3"></label>
             <label>Rounds<input id="rounds1" type="number" min="1" max="10" value="5"></label>
@@ -95,6 +106,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
         </div>
         <div class="hour-box">
           <strong>15:00–16:00</strong>
+          <div id="count2" class="player-count">0 players selected</div>
           <div class="settings-grid">
             <label>Courts<input id="courts2" type="number" min="1" max="3" value="3"></label>
             <label>Rounds<input id="rounds2" type="number" min="1" max="10" value="5"></label>
@@ -140,24 +152,43 @@ function addPlayer(name="",gender="F"){
   const n=box.children.length+1;
   row.innerHTML=`
     <div class="player-number">${n}</div>
-    <input type="text" class="pname" value="${escapeHtml(name)}" placeholder="Name">
+    <input type="text" class="pname" value="${escapeHtml(name)}" placeholder="Name" oninput="updatePlayerCounts()">
     <select class="pgender"><option value="F" ${gender==="F"?"selected":""}>Female</option><option value="M" ${gender==="M"?"selected":""}>Male</option></select>
-    <select class="ptime">
+    <select class="ptime" onchange="updatePlayerCounts()">
       <option value="none">Not playing</option>
       <option value="h1">14:00–15:00</option>
       <option value="h2">15:00–16:00</option>
       <option value="both">Both hours</option>
     </select>
-    <button class="ghost" onclick="this.parentElement.remove();renumberPlayers()" title="Remove">×</button>`;
+    <button class="ghost" onclick="this.parentElement.remove();renumberPlayers();updatePlayerCounts()" title="Remove">×</button>`;
   box.appendChild(row)
 }
 function renumberPlayers(){[...document.querySelectorAll(".player-row")].forEach((r,i)=>r.querySelector(".player-number").textContent=i+1)}
-function clearAttendance(){document.querySelectorAll(".ptime").forEach(x=>x.value="none")}
+function clearAttendance(){
+  document.querySelectorAll(".ptime").forEach(x=>x.value="none");
+  updatePlayerCounts();
+}
 function savePlayerList(){
   const list=[...document.querySelectorAll(".player-row")].map(r=>({name:r.querySelector(".pname").value.trim(),gender:r.querySelector(".pgender").value}));
   localStorage.setItem("pickleballPlayerList",JSON.stringify(list)); savedPlayerList=list; alert("Master player list saved on this device.")
 }
 function resetHistory(){fairness={};localStorage.setItem("pickleballFairnessV2","{}");alert("Fairness history reset.")}
+function updatePlayerCounts(){
+  const rows=[...document.querySelectorAll(".player-row")];
+  let h1=0,h2=0;
+  rows.forEach(r=>{
+    const name=r.querySelector(".pname").value.trim();
+    if(!name) return;
+    const t=r.querySelector(".ptime").value;
+    if(t==="h1" || t==="both") h1++;
+    if(t==="h2" || t==="both") h2++;
+  });
+  const c1=document.getElementById("count1");
+  const c2=document.getElementById("count2");
+  if(c1) c1.textContent=`${h1} player${h1===1?"":"s"} selected`;
+  if(c2) c2.textContent=`${h2} player${h2===1?"":"s"} selected`;
+}
+
 function getRoster(){
   return [...document.querySelectorAll(".player-row")].map(r=>({
     name:r.querySelector(".pname").value.trim(),
@@ -387,6 +418,7 @@ function copySchedule(){
 
 const initial=Array.isArray(savedPlayerList)&&savedPlayerList.length?savedPlayerList:starterPlayers;
 initial.forEach(p=>addPlayer(p.name||"",p.gender||"F"));
+updatePlayerCounts();
 </script>
 </body>
 </html>
