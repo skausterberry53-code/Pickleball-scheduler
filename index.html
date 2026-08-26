@@ -122,7 +122,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
 
       <p class="note">
         Court access and pairings are gender-neutral. The scheduler focuses on fair sit-outs, avoiding consecutive breaks, protecting second-hour arrivals only from an immediate first-round sit-out, and reducing repeated partners and opponents.
-        In the second hour, people who have just arrived are protected from sitting out in the first round where possible. After that, sit-outs are equalised across everyone in that hour.
+        In the second hour, new arrivals are protected from sitting out in the first round where possible. Everyone still receives a fair first break; if second breaks are needed, they normally fall to two-hour players before one-hour second-session players.
       </p>
       <div id="error" class="error"></div>
     </div>
@@ -251,15 +251,24 @@ function chooseSelected(active, playableCount, state, hour, roundIndex){
     if(last===slot-1) cost += 100000;
 
     // Equalise sit-outs within the current hour.
+    // A first sit-out must normally be given before anyone takes a second.
     cost += hourSits*10000;
 
-    if(hour==="h2" && roundIndex===0){
-      // Only protect new arrivals from an immediate first-round sit-out.
-      // After round 1, all players in the hour are treated equally.
-      if(p.time==="h2") cost += 50000;
+    if(hour==="h2"){
+      if(roundIndex===0){
+        // Protect new arrivals only from an immediate first-round sit-out.
+        if(p.time==="h2") cost += 50000;
 
-      // Two-hour players can absorb the initial second-hour break where needed.
-      if(p.time==="both") cost -= 1000;
+        // Two-hour players can absorb the initial second-hour break where needed.
+        if(p.time==="both") cost -= 1000;
+      }
+
+      // Once someone has already had one break in this hour, prefer any
+      // unavoidable SECOND breaks to fall to two-hour players before
+      // one-hour second-session players. This does not prevent a newcomer
+      // receiving a first break.
+      if(hourSits>=1 && p.time==="h2") cost += 5000;
+      if(hourSits>=1 && p.time==="both") cost -= 500;
     }
 
     // Prefer the person whose previous break was longest ago.
