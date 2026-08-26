@@ -132,7 +132,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
       <div id="output" class="note">Choose playing times and generate both hours.</div>
       <div class="actions">
         <button class="ghost" onclick="window.print()">Print</button>
-        <button class="ghost" onclick="copySchedule()">Copy schedule</button>
+        <button class="ghost" onclick="copySchedule()">Copy A4 grid</button>
       </div>
     </div>
   </div>
@@ -142,6 +142,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
 const starterPlayers = Array.from({length:30}, (_,i)=>({name:"",gender:"F"}));
 let savedPlayerList = JSON.parse(localStorage.getItem("pickleballPlayerList") || "null");
 let fairness = JSON.parse(localStorage.getItem("pickleballFairnessV2") || "{}");
+let latestHours = null;
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function key(a,b){return [a,b].sort().join("||")}
@@ -446,6 +447,7 @@ function fmtTime(hour,round,mins){
 }
 
 function renderDay(hours,roster,state){
+  latestHours = hours;
   let html="";
   for(const hr of hours){
     const title=hr.hour==="h1"?"15:00–16:00":"16:00–17:00";
@@ -471,8 +473,84 @@ function renderDay(hours,roster,state){
 }
 
 function copySchedule(){
-  const text=document.getElementById("output").innerText;
-  navigator.clipboard.writeText(text).then(()=>alert("Schedule copied."),()=>alert("Could not copy automatically."));
+  if(!latestHours){
+    alert("Generate the schedule first.");
+    return;
+  }
+
+  function gameText(game){
+    if(!game) return "";
+    return `${game[0][0]} + ${game[0][1]} v ${game[1][0]} + ${game[1][1]}`;
+  }
+
+  function makeTable(hr){
+    const title = hr.hour==="h1" ? "15:00–16:00" : "16:00–17:00";
+    let html = `
+      <p style="font-family:Arial,sans-serif;font-size:14pt;font-weight:bold;margin:12px 0 6px">${title}</p>
+      <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;font-size:11pt;table-layout:fixed">
+        <thead>
+          <tr>
+            <th style="border:1px solid #666;padding:7px;width:10%;background:#e8f3f0">Session</th>
+            <th style="border:1px solid #666;padding:7px;width:22%">Court 1</th>
+            <th style="border:1px solid #666;padding:7px;width:22%">Court 2</th>
+            <th style="border:1px solid #666;padding:7px;width:22%">Court 3</th>
+            <th style="border:1px solid #666;padding:7px;width:24%">Sit out</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    hr.roundData.forEach(item=>{
+      const courts = item.games.map(gameText);
+      while(courts.length < 3) courts.push("");
+      html += `
+        <tr>
+          <td style="border:1px solid #666;padding:8px;text-align:center;font-weight:bold">${item.round}</td>
+          <td style="border:1px solid #666;padding:8px">${escapeHtml(courts[0])}</td>
+          <td style="border:1px solid #666;padding:8px">${escapeHtml(courts[1])}</td>
+          <td style="border:1px solid #666;padding:8px">${escapeHtml(courts[2])}</td>
+          <td style="border:1px solid #666;padding:8px">${item.sitting.length ? item.sitting.map(escapeHtml).join(", ") : "Nobody"}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    return html;
+  }
+
+  const html = latestHours.map(makeTable).join('<div style="height:14px"></div>');
+
+  let text = "";
+  latestHours.forEach(hr=>{
+    const title = hr.hour==="h1" ? "15:00–16:00" : "16:00–17:00";
+    text += `${title}\nSession\tCourt 1\tCourt 2\tCourt 3\tSit out\n`;
+    hr.roundData.forEach(item=>{
+      const courts=item.games.map(gameText);
+      while(courts.length<3) courts.push("");
+      text += [
+        item.round,
+        courts[0],
+        courts[1],
+        courts[2],
+        item.sitting.length ? item.sitting.join(", ") : "Nobody"
+      ].join("\t") + "\n";
+    });
+    text += "\n";
+  });
+
+  if(navigator.clipboard && window.ClipboardItem){
+    const clip = new ClipboardItem({
+      "text/html": new Blob([html], {type:"text/html"}),
+      "text/plain": new Blob([text], {type:"text/plain"})
+    });
+    navigator.clipboard.write([clip]).then(
+      ()=>alert("Schedule copied as an A4-friendly grid. Paste into Word or Pages."),
+      ()=>navigator.clipboard.writeText(text).then(()=>alert("Schedule copied."))
+    );
+  } else {
+    navigator.clipboard.writeText(text).then(
+      ()=>alert("Schedule copied. Paste into Word or Pages."),
+      ()=>alert("Could not copy automatically.")
+    );
+  }
 }
 
 const initial=Array.isArray(savedPlayerList)&&savedPlayerList.length?savedPlayerList:starterPlayers;
