@@ -121,7 +121,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
       </div>
 
       <p class="note">
-        Pairing formats are MF vs MF, FF vs FF or MM vs MM. Mixed matches are preferred where numbers allow.
+        Court access is decided purely on fairness. Once players are selected, the scheduler prefers MF vs MF, then FF vs FF or MM vs MM, but will use other combinations if needed.
         In the second hour, people who have just arrived are protected from sitting out immediately; people playing both hours take priority for early breaks where possible.
       </p>
       <div id="error" class="error"></div>
@@ -199,22 +199,26 @@ function getRoster(){
 }
 function validForHour(p,h){return p.time==="both" || p.time===h}
 
-function planGameTypes(maleCount,totalPlayers){
-  const games=totalPlayers/4;
-  let best=null;
-  for(let mixed=games;mixed>=0;mixed--){
-    const remM=maleCount-2*mixed, remF=(totalPlayers-maleCount)-2*mixed;
-    if(remM<0||remF<0) continue;
-    if(remM%4===0 && remF%4===0 && remM/4+remF/4+mixed===games){
-      best={mixed,mm:remM/4,ff:remF/4}; break;
-    }
-  }
-  return best;
+function pairGenderType(team, genderByName){
+  const g=team.map(n=>genderByName[n]).sort().join("");
+  if(g==="FM") return "mixed";
+  if(g==="FF") return "ff";
+  return "mm";
 }
 
-function pairingScore(games,partnerHistory,opponentHistory){
+function pairingScore(games,partnerHistory,opponentHistory,genderByName){
   let score=0;
   for(const [t1,t2] of games){
+    const type1=pairGenderType(t1,genderByName);
+    const type2=pairGenderType(t2,genderByName);
+
+    // Pairing preference only. This never changes who gets to play.
+    if(type1==="mixed" && type2==="mixed") score -= 30;
+    else if(type1==="ff" && type2==="ff") score -= 18;
+    else if(type1==="mm" && type2==="mm") score -= 18;
+    else if((type1==="mm" && type2==="ff") || (type1==="ff" && type2==="mm")) score += 6;
+    else score += 12;
+
     score+=(partnerHistory[key(t1[0],t1[1])]||0)*12;
     score+=(partnerHistory[key(t2[0],t2[1])]||0)*12;
     for(const a of t1) for(const b of t2) score+=(opponentHistory[key(a,b)]||0)*3;
@@ -223,24 +227,12 @@ function pairingScore(games,partnerHistory,opponentHistory){
 }
 
 function randomValidGames(selected,genderByName){
-  let men=selected.filter(n=>genderByName[n]==="M").sort(()=>Math.random()-.5);
-  let women=selected.filter(n=>genderByName[n]==="F").sort(()=>Math.random()-.5);
-  const plan=planGameTypes(men.length,selected.length);
-  if(!plan) return null;
+  const arr=[...selected].sort(()=>Math.random()-.5);
   const games=[];
-  for(let i=0;i<plan.mixed;i++){
-    const m1=men.pop(),m2=men.pop(),f1=women.pop(),f2=women.pop();
-    if(Math.random()<.5) games.push([[m1,f1],[m2,f2]]); else games.push([[m1,f2],[m2,f1]]);
+  for(let i=0;i<arr.length;i+=4){
+    games.push([[arr[i],arr[i+1]],[arr[i+2],arr[i+3]]]);
   }
-  for(let i=0;i<plan.mm;i++){
-    const a=men.pop(),b=men.pop(),c=men.pop(),d=men.pop();
-    if(Math.random()<.5) games.push([[a,b],[c,d]]); else games.push([[a,c],[b,d]]);
-  }
-  for(let i=0;i<plan.ff;i++){
-    const a=women.pop(),b=women.pop(),c=women.pop(),d=women.pop();
-    if(Math.random()<.5) games.push([[a,b],[c,d]]); else games.push([[a,c],[b,d]]);
-  }
-  return games.sort(()=>Math.random()-.5);
+  return games;
 }
 
 function bestGames(selected,partnerHistory,opponentHistory,genderByName){
@@ -248,22 +240,20 @@ function bestGames(selected,partnerHistory,opponentHistory,genderByName){
   for(let i=0;i<1800;i++){
     const g=randomValidGames(selected,genderByName);
     if(!g) continue;
-    const s=pairingScore(g,partnerHistory,opponentHistory);
+    const s=pairingScore(g,partnerHistory,opponentHistory,genderByName);
     if(s<bestScore){best=g;bestScore=s}
   }
   return best;
 }
 
 function chooseSelected(active, playableCount, state, hour, roundIndex){
-  const genderByName=state.genderByName;
   const sitCount=active.length-playableCount;
   if(sitCount<=0) return {selected:[...active],sitting:[]};
 
   const slot=state.slotCounter||0;
   const costs={};
 
-  // Calculate each person's sit-out cost once per round.
-  // Lower cost = better candidate to take this break.
+  // Fairness only: gender does not affect who gets court time.
   for(const n of active){
     const p=state.byName[n];
     const hourGames=state.hourGames[n]||0;
@@ -273,27 +263,25 @@ function chooseSelected(active, playableCount, state, hour, roundIndex){
     const last=state.lastSitSlot[n];
     let cost=0;
 
-    // Hard protection against sitting out in consecutive rounds,
-    // including across the 16:00 hour boundary.
+    // Avoid consecutive sit-outs whenever mathematically possible.
     if(last===slot-1) cost += 100000;
 
-    // Strongly equalise sit-outs within the current hour.
+    // Equalise sit-outs within the current hour.
     cost += hourSits*10000;
 
     if(hour==="h2"){
-      // New arrivals should normally get straight onto court.
+      // Protect people who have just arrived for the second hour.
       if(p.time==="h2" && hourGames===0) cost += 50000;
       else if(p.time==="h2") cost += 1200;
 
-      // Two-hour players absorb early second-hour breaks first where possible.
+      // Two-hour players are more available to absorb early second-hour breaks.
       if(p.time==="both") cost -= 1000;
     }
 
-    // If sit-out totals are equal, prefer the person whose last break
-    // was longest ago. Never having sat is treated as longest ago.
+    // Prefer the person whose previous break was longest ago.
     cost += (last===undefined ? -1000 : last*20);
 
-    // Minor tie-breakers only.
+    // Minor tie-breakers.
     cost -= dayGames*5;
     cost += hist*0.2;
     cost += Math.random();
@@ -301,69 +289,9 @@ function chooseSelected(active, playableCount, state, hour, roundIndex){
     costs[n]=cost;
   }
 
-  const men=active
-    .filter(n=>genderByName[n]==="M")
-    .sort((a,b)=>costs[a]-costs[b]);
-  const women=active
-    .filter(n=>genderByName[n]==="F")
-    .sort((a,b)=>costs[a]-costs[b]);
-
-  // Strict match formats require an even number of men left playing.
-  // Evaluate every feasible male/female split among the sitters and
-  // choose the one that best preserves fairness.
-  const expectedMaleSits=sitCount*men.length/active.length;
-  let options=[];
-
-  for(let maleSits=0;maleSits<=sitCount;maleSits++){
-    const femaleSits=sitCount-maleSits;
-    if(maleSits>men.length || femaleSits>women.length) continue;
-    if((men.length-maleSits)%2!==0) continue;
-
-    const chosen=[...men.slice(0,maleSits),...women.slice(0,femaleSits)];
-    const resulting=active.map(n=>(state.hourSits[n]||0)+(chosen.includes(n)?1:0));
-
-    const consecutive=chosen.filter(n=>state.lastSitSlot[n]===slot-1).length;
-    const newcomerImmediate=chosen.filter(n=>
-      hour==="h2" &&
-      state.byName[n].time==="h2" &&
-      (state.hourGames[n]||0)===0
-    ).length;
-
-    const maxSits=Math.max(...resulting);
-    const minSits=Math.min(...resulting);
-    const mean=resulting.reduce((a,b)=>a+b,0)/resulting.length;
-    const variance=resulting.reduce((s,x)=>s+Math.pow(x-mean,2),0)/resulting.length;
-    const proportionalPenalty=Math.abs(maleSits-expectedMaleSits);
-    const secondaryCost=chosen.reduce((s,n)=>s+costs[n],0);
-
-    options.push({
-      chosen,
-      key:[
-        consecutive,
-        newcomerImmediate,
-        maxSits-minSits,
-        maxSits,
-        variance,
-        proportionalPenalty,
-        secondaryCost
-      ]
-    });
-  }
-
-  function compareKeys(a,b){
-    for(let i=0;i<a.length;i++){
-      if(a[i]!==b[i]) return a[i]-b[i];
-    }
-    return 0;
-  }
-
-  options.sort((a,b)=>compareKeys(a.key,b.key));
-
-  // If exact gender formatting is impossible, fall back to the fairest
-  // unrestricted sit-out choice; pairing code will flag the exception.
-  const sitting=options.length
-    ? options[0].chosen
-    : [...active].sort((a,b)=>costs[a]-costs[b]).slice(0,sitCount);
+  const sitting=[...active]
+    .sort((a,b)=>costs[a]-costs[b])
+    .slice(0,sitCount);
 
   const selected=active.filter(n=>!sitting.includes(n));
   return {selected,sitting};
@@ -387,7 +315,7 @@ function runHour(roster,hour,courts,rounds,minutes,state){
     let games=bestGames(selected,partnerHistory,opponentHistory,state.genderByName);
 
     if(!games){
-      result.warnings.push(`Round ${r+1}: exact MF/MF, FF/FF or MM/MM formatting was not possible with the selected gender mix.`);
+      result.warnings.push(`Round ${r+1}: preferred pairing formats were not possible, so the fairest available pairing was used.`);
       // Fallback random pairing only if mathematically unavoidable.
       const arr=[...selected].sort(()=>Math.random()-.5); games=[];
       for(let i=0;i<arr.length;i+=4) games.push([[arr[i],arr[i+1]],[arr[i+2],arr[i+3]]]);
