@@ -19,7 +19,7 @@ h1{margin:0 0 6px;font-size:30px} h2{margin:0 0 12px} h3{margin:18px 0 8px}
 .grid{display:grid;grid-template-columns:470px 1fr;gap:20px;align-items:start}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.05)}
 .header-row,.player-row{
-  display:grid;grid-template-columns:30px minmax(110px,1fr) 92px 135px 34px;
+  display:grid;grid-template-columns:30px minmax(140px,1fr) 150px 34px;
   gap:7px;align-items:center
 }
 .header-row{font-size:11px;color:var(--muted);font-weight:700;margin:10px 0 6px}
@@ -66,7 +66,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
 }
 @media(max-width:560px){
   .wrap{padding:10px}.card{padding:12px}
-  .header-row,.player-row{grid-template-columns:26px minmax(95px,1fr) 78px 114px 30px;gap:4px}
+  .header-row,.player-row{grid-template-columns:26px minmax(120px,1fr) 118px 30px;gap:4px}
   input[type=text],select{font-size:12px;padding:7px 5px}
   .hour-settings{grid-template-columns:1fr}
 }
@@ -85,7 +85,7 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
       <h2>Players</h2>
       <div class="note">Save your master list once. For each session choose whether each person is playing the first hour, second hour, both hours, or not playing.</div>
 
-      <div class="header-row"><div>#</div><div>Name</div><div>Gender</div><div>Playing</div><div></div></div>
+      <div class="header-row"><div>#</div><div>Name</div><div>Playing</div><div></div></div>
       <div id="players"></div>
 
       <div class="actions">
@@ -121,8 +121,8 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
       </div>
 
       <p class="note">
-        Court access is decided purely on fairness. Once players are selected, the scheduler prefers MF vs MF, then FF vs FF or MM vs MM, but will use other combinations if needed.
-        In the second hour, people who have just arrived are protected from sitting out immediately; people playing both hours take priority for early breaks where possible.
+        Court access and pairings are gender-neutral. The scheduler focuses on fair sit-outs, avoiding consecutive breaks, protecting second-hour arrivals only from an immediate first-round sit-out, and reducing repeated partners and opponents.
+        In the second hour, people who have just arrived are protected from sitting out in the first round where possible. After that, sit-outs are equalised across everyone in that hour.
       </p>
       <div id="error" class="error"></div>
     </div>
@@ -139,22 +139,22 @@ button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;cursor:point
 </div>
 
 <script>
-const starterPlayers = Array.from({length:30}, (_,i)=>({name:"",gender:"F"}));
+const starterPlayers = Array.from({length:30}, ()=>({name:""}));
 let savedPlayerList = JSON.parse(localStorage.getItem("pickleballPlayerList") || "null");
 let fairness = JSON.parse(localStorage.getItem("pickleballFairnessV2") || "{}");
 let latestHours = null;
+let latestState = null;
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function key(a,b){return [a,b].sort().join("||")}
 
-function addPlayer(name="",gender="F"){
+function addPlayer(name=""){
   const box=document.getElementById("players");
   const row=document.createElement("div"); row.className="player-row";
   const n=box.children.length+1;
   row.innerHTML=`
     <div class="player-number">${n}</div>
     <input type="text" class="pname" value="${escapeHtml(name)}" placeholder="Name" oninput="updatePlayerCounts()">
-    <select class="pgender"><option value="F" ${gender==="F"?"selected":""}>Female</option><option value="M" ${gender==="M"?"selected":""}>Male</option></select>
     <select class="ptime" onchange="updatePlayerCounts()">
       <option value="none">Not playing</option>
       <option value="h1">15:00–16:00</option>
@@ -170,7 +170,7 @@ function clearAttendance(){
   updatePlayerCounts();
 }
 function savePlayerList(){
-  const list=[...document.querySelectorAll(".player-row")].map(r=>({name:r.querySelector(".pname").value.trim(),gender:r.querySelector(".pgender").value}));
+  const list=[...document.querySelectorAll(".player-row")].map(r=>({name:r.querySelector(".pname").value.trim()}));
   localStorage.setItem("pickleballPlayerList",JSON.stringify(list)); savedPlayerList=list; alert("Master player list saved on this device.")
 }
 function resetHistory(){fairness={};localStorage.setItem("pickleballFairnessV2","{}");alert("Fairness history reset.")}
@@ -191,42 +191,26 @@ function updatePlayerCounts(){
 }
 
 function getRoster(){
-  return [...document.querySelectorAll(".player-row")].map(r=>({
+  return [...document.querySelectorAll(".player-row")].map((r,i)=>({
+    id:`p${i+1}`,
     name:r.querySelector(".pname").value.trim(),
-    gender:r.querySelector(".pgender").value,
     time:r.querySelector(".ptime").value
   })).filter(p=>p.name)
 }
 function validForHour(p,h){return p.time==="both" || p.time===h}
 
-function pairGenderType(team, genderByName){
-  const g=team.map(n=>genderByName[n]).sort().join("");
-  if(g==="FM") return "mixed";
-  if(g==="FF") return "ff";
-  return "mm";
-}
-
-function pairingScore(games,partnerHistory,opponentHistory,genderByName){
+function pairingScore(games,partnerHistory,opponentHistory){
   let score=0;
   for(const [t1,t2] of games){
-    const type1=pairGenderType(t1,genderByName);
-    const type2=pairGenderType(t2,genderByName);
-
-    // Pairing preference only. This never changes who gets to play.
-    if(type1==="mixed" && type2==="mixed") score -= 30;
-    else if(type1==="ff" && type2==="ff") score -= 18;
-    else if(type1==="mm" && type2==="mm") score -= 18;
-    else if((type1==="mm" && type2==="ff") || (type1==="ff" && type2==="mm")) score += 6;
-    else score += 12;
-
     score+=(partnerHistory[key(t1[0],t1[1])]||0)*12;
     score+=(partnerHistory[key(t2[0],t2[1])]||0)*12;
-    for(const a of t1) for(const b of t2) score+=(opponentHistory[key(a,b)]||0)*3;
+    for(const a of t1) for(const b of t2){
+      score+=(opponentHistory[key(a,b)]||0)*3;
+    }
   }
   return score+Math.random()*0.2;
 }
-
-function randomValidGames(selected,genderByName){
+function randomValidGames(selected){
   const arr=[...selected].sort(()=>Math.random()-.5);
   const games=[];
   for(let i=0;i<arr.length;i+=4){
@@ -235,12 +219,12 @@ function randomValidGames(selected,genderByName){
   return games;
 }
 
-function bestGames(selected,partnerHistory,opponentHistory,genderByName){
+function bestGames(selected,partnerHistory,opponentHistory){
   let best=null,bestScore=Infinity;
   for(let i=0;i<1800;i++){
-    const g=randomValidGames(selected,genderByName);
+    const g=randomValidGames(selected);
     if(!g) continue;
-    const s=pairingScore(g,partnerHistory,opponentHistory,genderByName);
+    const s=pairingScore(g,partnerHistory,opponentHistory);
     if(s<bestScore){best=g;bestScore=s}
   }
   return best;
@@ -259,7 +243,7 @@ function chooseSelected(active, playableCount, state, hour, roundIndex){
     const hourGames=state.hourGames[n]||0;
     const hourSits=state.hourSits[n]||0;
     const dayGames=state.dayGames[n]||0;
-    const hist=fairness[n]?.sits||0;
+    const hist=fairness[state.displayName[n]]?.sits||0;
     const last=state.lastSitSlot[n];
     let cost=0;
 
@@ -269,12 +253,12 @@ function chooseSelected(active, playableCount, state, hour, roundIndex){
     // Equalise sit-outs within the current hour.
     cost += hourSits*10000;
 
-    if(hour==="h2"){
-      // Protect people who have just arrived for the second hour.
-      if(p.time==="h2" && hourGames===0) cost += 50000;
-      else if(p.time==="h2") cost += 1200;
+    if(hour==="h2" && roundIndex===0){
+      // Only protect new arrivals from an immediate first-round sit-out.
+      // After round 1, all players in the hour are treated equally.
+      if(p.time==="h2") cost += 50000;
 
-      // Two-hour players are more available to absorb early second-hour breaks.
+      // Two-hour players can absorb the initial second-hour break where needed.
       if(p.time==="both") cost -= 1000;
     }
 
@@ -299,7 +283,7 @@ function chooseSelected(active, playableCount, state, hour, roundIndex){
 
 function runHour(roster,hour,courts,rounds,minutes,state){
   const activePlayers=roster.filter(p=>validForHour(p,hour));
-  const active=activePlayers.map(p=>p.name);
+  const active=activePlayers.map(p=>p.id);
   const capacity=courts*4;
   const playableCount=Math.floor(Math.min(capacity,active.length)/4)*4;
   const result={hour,active:activePlayers.length,courts,rounds,minutes,roundData:[],warnings:[]};
@@ -312,10 +296,10 @@ function runHour(roster,hour,courts,rounds,minutes,state){
 
   for(let r=0;r<rounds;r++){
     const {selected,sitting}=chooseSelected(active,playableCount,state,hour,r);
-    let games=bestGames(selected,partnerHistory,opponentHistory,state.genderByName);
+    let games=bestGames(selected,partnerHistory,opponentHistory);
 
     if(!games){
-      result.warnings.push(`Round ${r+1}: preferred pairing formats were not possible, so the fairest available pairing was used.`);
+      
       // Fallback random pairing only if mathematically unavoidable.
       const arr=[...selected].sort(()=>Math.random()-.5); games=[];
       for(let i=0;i<arr.length;i+=4) games.push([[arr[i],arr[i+1]],[arr[i+2],arr[i+3]]]);
@@ -340,13 +324,10 @@ function generateDay(){
   const error=document.getElementById("error");error.textContent="";
   const roster=getRoster().filter(p=>p.time!=="none");
   if(roster.length<4){error.textContent="Select at least four players.";return}
-  const dup=roster.find((p,i)=>roster.findIndex(q=>q.name.toLowerCase()===p.name.toLowerCase())!==i);
-  if(dup){error.textContent="Each player needs a unique name.";return}
-
-  const byName=Object.fromEntries(roster.map(p=>[p.name,p]));
-  const genderByName=Object.fromEntries(roster.map(p=>[p.name,p.gender]));
-  const state={byName,genderByName,dayGames:{},daySits:{},h1Sits:{},lastSitSlot:{},slotCounter:0};
-  roster.forEach(p=>{state.dayGames[p.name]=0;state.daySits[p.name]=0;state.h1Sits[p.name]=0});
+  const byName=Object.fromEntries(roster.map(p=>[p.id,p]));
+  const displayName=Object.fromEntries(roster.map(p=>[p.id,p.name]));
+  const state={byName,displayName,dayGames:{},daySits:{},h1Sits:{},lastSitSlot:{},slotCounter:0};
+  roster.forEach(p=>{state.dayGames[p.id]=0;state.daySits[p.id]=0;state.h1Sits[p.id]=0});
 
   const h1=runHour(roster,"h1",
     Math.max(1,+document.getElementById("courts1").value),
@@ -360,8 +341,8 @@ function generateDay(){
 
   roster.forEach(p=>{
     fairness[p.name]=fairness[p.name]||{games:0,sits:0};
-    fairness[p.name].games+=(state.dayGames[p.name]||0);
-    fairness[p.name].sits+=(state.daySits[p.name]||0);
+    fairness[p.name].games+=(state.dayGames[p.id]||0);
+    fairness[p.name].sits+=(state.daySits[p.id]||0);
   });
   localStorage.setItem("pickleballFairnessV2",JSON.stringify(fairness));
   renderDay([h1,h2],roster,state);
@@ -376,6 +357,7 @@ function fmtTime(hour,round,mins){
 
 function renderDay(hours,roster,state){
   latestHours = hours;
+  latestState = state;
   let html="";
   for(const hr of hours){
     const title=hr.hour==="h1"?"15:00–16:00":"16:00–17:00";
@@ -385,16 +367,16 @@ function renderDay(hours,roster,state){
     for(const item of hr.roundData){
       html+=`<div class="round"><div class="round-head"><span>Round ${item.round}</span><span>${fmtTime(hr.hour,item.round,hr.minutes)}</span></div><div class="courts">`;
       item.games.forEach((g,i)=>{
-        html+=`<div class="court"><div class="court-title">Court ${i+1}</div><div>${escapeHtml(g[0][0])} &amp; ${escapeHtml(g[0][1])}</div><div class="vs">vs</div><div>${escapeHtml(g[1][0])} &amp; ${escapeHtml(g[1][1])}</div></div>`;
+        html+=`<div class="court"><div class="court-title">Court ${i+1}</div><div>${escapeHtml(state.displayName[g[0][0]])} &amp; ${escapeHtml(state.displayName[g[0][1]])}</div><div class="vs">vs</div><div>${escapeHtml(state.displayName[g[1][0]])} &amp; ${escapeHtml(state.displayName[g[1][1]])}</div></div>`;
       });
-      html+=`</div><div class="sitout"><strong>Sitting out:</strong> ${item.sitting.length?item.sitting.map(escapeHtml).join(", "):"Nobody"}</div></div>`;
+      html+=`</div><div class="sitout"><strong>Sitting out:</strong> ${item.sitting.length?item.sitting.map(n=>escapeHtml(state.displayName[n])).join(", "):"Nobody"}</div></div>`;
     }
   }
 
   html+=`<h3>Day summary</h3><table class="summary"><thead><tr><th>Player</th><th>Playing</th><th>Games</th><th>Sit-outs</th></tr></thead><tbody>`;
   const label={h1:"15–16",h2:"16–17",both:"Both"};
   roster.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
-    html+=`<tr><td>${escapeHtml(p.name)}</td><td>${label[p.time]}</td><td>${state.dayGames[p.name]||0}</td><td>${state.daySits[p.name]||0}</td></tr>`;
+    html+=`<tr><td>${escapeHtml(p.name)}</td><td>${label[p.time]}</td><td>${state.dayGames[p.id]||0}</td><td>${state.daySits[p.id]||0}</td></tr>`;
   });
   html+=`</tbody></table>`;
   document.getElementById("output").innerHTML=html;
@@ -408,7 +390,7 @@ function copySchedule(){
 
   function gameText(game){
     if(!game) return "";
-    return `${game[0][0]} + ${game[0][1]} v ${game[1][0]} + ${game[1][1]}`;
+    return `${latestState.displayName[game[0][0]]} + ${latestState.displayName[game[0][1]]} v ${latestState.displayName[game[1][0]]} + ${latestState.displayName[game[1][1]]}`;
   }
 
   function makeTable(hr){
@@ -436,7 +418,7 @@ function copySchedule(){
           <td style="border:1px solid #666;padding:8px">${escapeHtml(courts[0])}</td>
           <td style="border:1px solid #666;padding:8px">${escapeHtml(courts[1])}</td>
           <td style="border:1px solid #666;padding:8px">${escapeHtml(courts[2])}</td>
-          <td style="border:1px solid #666;padding:8px">${item.sitting.length ? item.sitting.map(escapeHtml).join(", ") : "Nobody"}</td>
+          <td style="border:1px solid #666;padding:8px">${item.sitting.length ? item.sitting.map(n=>escapeHtml(latestState.displayName[n])).join(", ") : "Nobody"}</td>
         </tr>`;
     });
 
@@ -458,7 +440,7 @@ function copySchedule(){
         courts[0],
         courts[1],
         courts[2],
-        item.sitting.length ? item.sitting.join(", ") : "Nobody"
+        item.sitting.length ? item.sitting.map(n=>latestState.displayName[n]).join(", ") : "Nobody"
       ].join("\t") + "\n";
     });
     text += "\n";
@@ -482,7 +464,7 @@ function copySchedule(){
 }
 
 const initial=Array.isArray(savedPlayerList)&&savedPlayerList.length?savedPlayerList:starterPlayers;
-initial.forEach(p=>addPlayer(p.name||"",p.gender||"F"));
+initial.forEach(p=>addPlayer(p.name||""));
 updatePlayerCounts();
 </script>
 </body>
